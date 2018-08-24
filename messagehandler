@@ -1,0 +1,349 @@
+
+
+消息处理机制
+
+
+
+Android消息机制的简介
+
+在安卓开发中，常常会遇到获取数据后更新UI的问题，比如：在获取网络信息后，需要弹出一个Toast
+
+HttpUtils.doGet("https://www.so.com/",
+new Callback() {
+
+    @Override
+
+    public
+void onFailure(Call call, IOException e) {
+
+ 
+
+    }
+
+ 
+
+    @Override
+
+    public
+void onResponse(Call call, Response response) throws IOException {
+
+       
+Toast.makeText(OkHttpActivity.this,"",Toast.LENGTH_SHORT).show();
+
+    }
+
+});
+
+这个时候程序就会报以下的错误
+
+java.lang.RuntimeException: Can't create
+handler inside thread that has not called Looper.prepare()
+
+这是因为Android规定了只允许UI线程修改Activity里的UI组件，而我们刚才的操作在子线程中修改Activity里的UI组件，才会导致UI操作的线程不安全，并报出错误。为了保证Android的UI操作是线程安全的，Android提供了Handler消息传递机制来解决这个问题
+
+Android消息机制的使用
+
+在获取网络信息后，需要弹出一个Toast，正确做法是
+
+private static final int MAKE_TOAST = 0x01;
+
+ 
+
+private Handler mHandler = new Handler(){
+
+    @Override
+
+    public
+void handleMessage(Message msg) {
+
+        switch (msg.what){
+
+           
+case MAKE_TOAST:
+
+                Toast.makeText(OkHttpActivity.this,"",Toast.LENGTH_SHORT).show();
+
+                break;
+
+       
+}
+
+    }
+
+};
+
+ 
+
+@Override
+
+protected void onCreate(Bundle
+savedInstanceState) {
+
+    super.onCreate(savedInstanceState);
+
+   
+setContentView(R.layout.activity_gallery);
+
+ 
+
+   
+HttpUtils.doGet("https://www.so.com/", new Callback() {
+
+       
+@Override
+
+       
+public void onFailure(Call call, IOException e) {
+
+ 
+
+       
+}
+
+       
+@Override
+
+       
+public void onResponse(Call call, Response response) throws IOException
+{
+
+           
+mHandler.sendEmptyMessageDelayed(MAKE_TOAST,200);
+
+       
+}
+
+   
+});
+
+}
+
+在子线程中通过Handler发送消息，该消息会在Hanlder中的handleMessage()中被解析，并进行相对应的UI组件更新
+
+Android消息机制的相关概念
+
+一、相关概念的解释
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 主线程（UI线程） 
+
+ 
+  定义：当程序第一次启动时，Android会同时启动一条主线程（Main Thread） 
+
+  作用：主线程主要负责处理与UI相关的事件
+
+ 
+ Message（消息） 
+
+ 
+  定义：Handler接收和处理的消息对象（Bean对象）
+
+  作用：通信时相关信息的存放和传递
+
+ 
+ ThreadLocal 
+
+ 
+  定义：线程内部的数据存储类
+
+  作用：负责存储和获取本线程的Looper
+
+ 
+ Message Queue（消息队列） 
+
+ 
+  定义：采用单链表的数据结构来存储消息列表
+
+  作用：用来存放通过Handler发过来的Message，按照先进先出执行
+
+ 
+ Handler（处理者） 
+
+ 
+  定义：Message的主要处理者 
+
+  作用：负责发送Message到消息队列&处理Looper分派过来的Message
+
+ 
+ Looper（循环器） 
+
+ 
+  定义：扮演Message Queue和Handler之间桥梁的角色
+
+  作用： 
+
+      消息循环：循环取出Message Queue的Message 
+
+      消息派发：将取出的Message交付给相应的Handler
+
+ 
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+二、图片解读它们之间的关系
+
+
+
+
+
+三、文字解读它们之间的关系
+
+
+
+Looper中存放有MessageQueen，MessageQueen中又有很多Message，当我们的Handler发送消息的时候，会获取当前的Looper，并在当前的Looper的MessageQueen当中存放我们发送的消息，而我们的MessageQueen也会在Looper的带动下，一直循环的读取Message信息，并将Message信息发送给Handler，并执行HandlerMessage()方法
+
+
+
+ 
+
+
+
+Android消息机制的通信流程
+
+ 
+
+
+
+
+
+
+
