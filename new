@@ -1,0 +1,1978 @@
+
+
+新手入门进阶指导
+
+
+
+
+ 目录
+
+
+ 1       计算机云环境配置... 3
+
+
+ 1.1        计算机云盘符挂载... 3
+
+
+ 1.1.1         第一块磁盘配置... 3
+
+
+ 1.1.2         配置第二块磁盘... 7
+
+
+ 1.2        计算机云新增用户... 10
+
+
+ 1.2.1         ubuntu 10.04 更改主机名... 10
+
+
+ 1.2.2         配置Samba. 10
+
+
+ 2       Git环境配置... 12
+
+
+ 2.1        配置repo环境... 12
+
+
+ 复制.gitconfig到自己服务器的根目录,参考附件，把zwx300680改成自己的域账号即可。                             12
+
+
+ 2.2        脚本路径执行和gerrit的注册以及秘钥的配置... 12
+
+
+ 2.2.1         脚本路径：http://wss-rnd.huawei.com/sites/ps-depts/BJCM/HandsetCME/GIT/Forms/AllItems.aspx
+ -->02_操作指导-->环境配置... 12
+
+
+ 2.2.2         Gerrit账号注册 秘钥的配置... 13
+
+
+ 3       产品权限申请... 17
+
+
+ 3.1        权限查询... 17
+
+
+ 3.2        权限申请... 18
+
+
+ 4       常见产品分支：... 18
+
+
+ 5       代码编译命令：... 19
+
+
+ 5.1        海思产品主要编译命令：... 19
+
+
+ 5.2        高通芯片产品 比如G760等主要是 sh脚本... 19
+
+
+ 6       Git常见操作命令... 19
+
+
+ 6.1        Git提交代码：... 19
+
+
+ 6.2        触发CI编译... 21
+
+
+ 有的CI能自动触发，有的服务器不行，需要手动触发！... 21
+
+
+ 6.2.1         网站触发... 21
+
+
+ 6.2.2         本地触发... 21
+
+
+ 6.3        挑单：... 22
+
+
+ 6.4        【GIT】如何在Gerrit上检索问题单... 23
+
+
+ 7       常用技巧... 24
+
+
+ 7.1        Linux下查询命令小技巧：... 24
+
+
+  
+
+
+
+
+ 
+
+
+
+     
+
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+1     
+计算机云环境配置
+
+1.1     
+计算机云盘符挂载
+
+1.1.1       
+第一块磁盘配置
+
+添加磁盘后执行 
+
+
+
+1、fdisk –l
+查看磁盘名称
+
+
+
+
+
+2、pvcreate
+/dev/xvde 创建PV   （不一定都是dev/xvde  如果你的你查询盘符是dev/xxx 那么后面的 dev/xvde都用xxx代替！）
+
+
+
+
+
+3、vgcreate
+vg1 /dev/xvde 创建VG
+
+
+
+
+
+4、vgdisplay
+查看VG大小：
+
+
+
+
+
+5、lvcreate
+–l ***** -n lv1 vg1 （ * 为上一步骤vgdipaly查询到的VG容量,单位byte）创建LV
+
+
+
+
+
+6、mkfs.ext3
+–j /dev/vg1/lv1      (Ubuntu
+使用ext4，suse使用ext3)
+
+
+
+   tune2fs –c 0 –i 0
+/dev/vg1/lv1
+
+
+
+   格式化磁盘：
+
+
+
+
+
+ 
+
+
+
+
+
+如选择系统为Suse，请继续往下7、
+
+
+
+如选择系统为Ubuntu，请跳至11、
+
+
+
+Suse系统挂载：
+
+
+
+7、fdisk –l
+查询磁盘状态，创建正常会生成 /dev/dm-0：
+
+
+
+
+
+8、mount
+/dev/dm-0 /usr1 挂载磁盘（/usr1为挂载目录，如无此目录，需先创建，另此目录可根据业务需要进行修改）：
+
+
+
+1) 创建挂载目录：mkdir
+/usr1 (如已有此目录，忽略此步)
+
+
+
+2) 挂载磁盘：mount
+/dev/dm-0 /usr1
+
+
+
+
+
+9、echo
+“/dev/dm-0 /usr1 ext3 defaults 0 0” >>/etc/fstab 修改启动项，使用系统重启时实现自动挂载（suse使用ext3）
+
+
+
+more /etc/fstab 查看是否修改成功，/etc/fstab文件显示存在下图红框部分说明修改成功。
+
+
+
+
+
+10、       查看磁盘挂载状态：
+
+
+
+
+
+Ubuntu系统挂载：
+
+
+
+11、mount
+/dev/vg1/lv1 /usr1 挂载磁盘（/usr1为挂载目录，如无此目录，需先创建，另此目录可根据业务需要进行修改）：
+
+
+
+1) 创建挂载目录：mkdir
+/usr1 (如已有此目录，忽略此步)
+
+
+
+2) 挂载磁盘：mount /dev/vg1/lv1
+/usr1
+
+
+
+
+
+12、echo
+“/dev/mapper/vg1-lv1 /usr1 ext4 defaults 0 0” >>/etc/fstab 修改启动项，使用系统重启时实现自动挂载（unbuntu使用ext4）
+
+
+
+       more /etc/fstab 查看是否修改成功，/etc/fstab文件显示存在下图红框部分说明修改成功。
+
+
+
+
+
+1.1.2       
+配置第二块磁盘
+
+使用fdisk –l命令查看新增磁盘的设备名
+
+
+
+
+
+创建PV
+
+
+
+
+
+加入原有VG中：
+
+
+
+
+
+扩展LV卷大小：
+
+
+
+
+
+调整文件系统大小：（根据磁盘大小等待的时间有长短）
+
+
+
+
+
+在线扩容完毕，并且在同一个挂载点下面。
+
+
+
+ 
+
+
+
+如执行resize2fs
+/dev/vg1/lv1时报错：
+
+
+
+resize2fs 1.38 (30-Jun-2005)
+
+
+
+/dev/vg1/lv1 is mounted; can't resize a
+mounted filesystem!
+
+
+
+则需要执行
+
+
+
+1、重启主机
+
+
+
+reboot
+
+
+
+2、查看磁盘挂载情况
+
+
+
+df -h
+
+
+
+3、如/dev/vg1/lv1 已挂载，则进行解挂，否则跳过此步
+
+
+
+umonut /dev/vg1/lv1
+
+
+
+4、调整文件系统大小
+
+
+
+resize2fs /dev/vg1/lv1
+
+
+
+如提示需检查磁盘情况，则按提示操作进行检查。
+
+
+
+5、重新挂载磁盘
+
+
+
+mount /dev/vg1/lv1 /usr1
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+1.2     
+计算机云新增用户
+
+1.2.1       
+ubuntu 10.04 更改主机名
+
+
+ 
+  
+  1.    
+  启用root用户
+
+       运行命令 sudo passwd root 为root用户设置密码
+
+
+  2.     以root用户身份登录
+
+       1）编辑文件/etc/hosts 将下面的一行
+
+            
+  127.0.1.1    xxxxx
+
+            替换为
+
+             127.0.1.1   
+  newhostname
+
+       2) 编辑 /etc/hostname文件 删除该文件的所有内容，添加newhostname
+
+       3）运行一下命令 hostname newhostname
+
+
+  3.     退出root用户 改用一般用户登录即可
+
+  
+
+  注：
+
+      其中
+  xxxxx为原来的主机名
+  newhostname为你想修改的主机名
+
+
+  
+ 
+
+
+
+1.2.2       
+配置Samba
+
+sudo vim /etc/samba/smb.conf
+
+
+
+在该文件中增加下面一段(注：df –h
+看下 磁盘挂载在哪，如果在cloud下，path就放到cloud下，不然内存很小)：
+
+
+
+[lijia]
+
+
+
+   
+comment = to lijia only
+
+
+
+    path =
+/cloud/lijia
+
+
+
+    public
+= no
+
+
+
+   
+available = yes
+
+
+
+   
+writeable = yes
+
+
+
+    valid
+users = lijia
+
+
+
+    create
+mask = 0664
+
+
+
+   
+directory mask = 0775
+
+
+
+   
+available = yes
+
+
+
+    browseable
+= yes
+
+
+
+ 
+
+
+
+添加用户：
+
+
+
+useradd -d /cloud/lijia -m lijia
+
+
+
+passwd lijia（根据提示设置密码）
+
+
+
+设置samba用户：
+
+
+
+sudo touch /etc/samba/smbpasswd
+
+
+
+sudo smbpasswd -a lijia（根据提示设置密码）
+
+
+
+重启服务：
+
+
+
+/etc/init.d/smbd restart
+
+
+
+ 
+
+
+
+PS：N版本对计算云的要求：
+
+
+
+1、最低配置为CPU 8核，内存8G。
+
+
+
+2、使用ubuntu14.04_64bit_server_N_20160316的linux镜像。
+
+
+
+查询地址：http://w3.huawei.com/hiclouduser/#!hicloud/userconsole/compute/host/vmListTab.html
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+2     
+Git环境配置
+
+2.1     
+配置repo环境
+
+首先从其他服务器拷贝bin目录下的repo到自己服务器根目录的bin下
+
+
+
+或者在linux下执行
+
+
+
+mkdir ~/bin
+
+
+
+curl -o ~/bin/repo http://10.176.110.150/static/repo
+
+chmod a+x ~/bin/repo
+
+
+
+ 
+
+
+
+export PATH=/usr/bin:$PATH
+
+
+
+复制.gitconfig到自己服务器的根目录,参考附件，把zwx300680改成自己的域账号即可。      
+
+注意在在配置武汉产品的gerrit地址时需要注意，配置方式如下，
+
+
+
+ 
+
+
+
+ [url
+"http://zwx300680@10.176.110.150"]
+
+
+
+  insteadof =
+http://10.176.110.150
+
+
+
+  insteadof =
+ssh://10.176.110.150
+
+
+
+  insteadof =
+http://androidxian.huawei.com
+
+
+
+  insteadof =
+ssh://androidxian.huawei.com
+
+
+
+ 
+
+
+
+如果在执行./ init-dev-env-wh_new.sh 后 这里会自动变更，注意还原成上面的配置。
+
+
+
+ 
+
+
+
+2.2     
+脚本路径执行和gerrit的注册以及秘钥的配置
+
+请现在如下路径下载脚本至服务器根目录
+
+
+
+2.2.1       
+脚本路径：http://wss-rnd.huawei.com/sites/ps-depts/BJCM/HandsetCME/GIT/Forms/AllItems.aspx -->02_操作指导-->环境配置
+
+目前我们主要负责有上海产品、北京产品、西安产品、武汉产品、还有代码回平台的操作。
+
+
+
+因此如下几个脚本都需要配置。
+
+
+
+ini-dev-env-hap.sh
+
+
+
+ini-dev-env-product(PEK).sh
+
+
+
+init-dev-env(SH).sh
+
+
+
+init-dev-env-wh_new.sh 
+
+
+
+init-dev-env-xa.sh
+
+
+
+
+
+复制到根目录后，需要给予权限。
+
+
+
+chmod a+x ini*    全部ini开头的文件都赋予了执行权限
+
+
+
+然后执行./ ini-dev-env-hap.sh
+lkf67102    把lkf67102换成自己的域账号，全小写。
+
+
+
+生成的秘钥请保存好。
+
+
+
+或者cat ~/.ssh/id_rsa.pub 来查看秘钥。
+
+
+
+后续脚本执行时候，都会问是否overwrite，选择n即可。不要弄错了！
+
+
+
+ 
+
+
+
+2.2.2    
+Gerrit账号注册 秘钥的配置
+
+目前我们接触到的gerrit地址较多，常见的如下
+
+1、平台 http://rnd-hap.huawei.com   主要用途
+平台分支！   PC分支！代码下载和上库！
+
+
+
+使用域账号密码登陆进去后，在右上角账号位置找到Settings,然后在SSH Public Keys里面添加秘钥，秘钥详见3.1里面  cat ~/.ssh/id_rsa.pub 来查看秘钥。
+
+
+
+
+
+2、武汉产品
+http://10.176.110.150/     这里提到下，目前除了EDCP EM3.1是镜像分支，必须用武汉产品下载，其他CRR GRA PLK都是量产实体分支！不要用镜像地址repo init来下载！全部用实体分支repo地址下载。
+
+
+
+比如CRR 实体分支如下：
+
+
+
+repo init -u
+http://10.140.130.49/platform/manifest.git -b
+br_seattle_v100r001c10_carrera_main_5_1 -m seattle_gp.xml --no-repo-verify
+--repo-branch=stable 
+
+
+
+武汉镜像分支如下：
+
+
+
+repo init -u
+http://10.176.110.150/platform/manifest.git -b
+br_seattle_v100r001c10_carrera_main_5_1 -m seattle_gp.xml --no-repo-verify
+--repo-branch=stable
+
+
+
+差异在哪？
+
+
+
+Carrera量产分支
+
+
+
+（镜像自上海，1小时定时同步一次)，武汉的镜像分支跟上海的实体分支同步是有延迟的！
+
+
+
+我们在下载的代码用镜像，在提交时，提交不上去就是因为实体分支我们没有配置相应的权限，导致提交不上去！因此，我们就用实体分支下载，实体分支提交！
+
+
+
+在http://10.167.50.214:8080/rootaction.action
+里面的分支基本都是实体分支!
+
+
+
+ 
+
+
+
+3、上海产品  
+
+
+
+http://10.140.130.49
+
+
+
+http://android.huawei.com:8080
+
+
+
+ 
+
+
+
+北京产品
+
+http://10.107.123.187:8080
+
+西安产品
+
+http://androidxian.huawei.com
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+CUST配置仓  主要是CRR GRA等DP产品都是git仓来配置的
+
+http://10.178.211.22:8080
+
+10.106.40.162:9080
+
+10.97.84.145:9080
+
+10.141.105.139:8080
+
+把秘钥都配置到上述gerrit地址的SSH Public Keys即可!
+
+怎么证明你有权限提交代码了呢？
+
+
+
+
+
+
+
+
+
+
+
+ssh -p
+29418 lkf67102@rnd-hap.huawei.com
+
+
+
+ssh -p
+29418 lkf67102@android.huawei.com
+
+
+
+ssh -p
+29418 lkf67102@10.107.123.187
+
+
+
+ssh -p
+29418 lkf67102@10.176.110.150
+
+
+
+ssh -p
+29418 lkf67102@10.140.130.49
+
+
+
+ssh -p
+29418 lkf67102@10.178.211.22
+
+
+
+ssh -p
+29418 lkf67102@androidxian.huawei.com
+
+
+
+ssh -p
+29418 lkf67102@10.141.105.139
+
+
+
+ssh -p
+29418 lkf67102@10.106.40.162
+
+
+
+ssh -p
+29418 lkf67102@10.97.84.145
+
+
+
+如果出现如下界面，表示OK了！
+
+
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+3     
+产品权限申请
+
+3.1     
+权限查询
+
+如果你gerrit地址进都进不去，那应该是没有对应的产品权限！需要去申请查询下自己的权限！
+lkf67102 换成自己账号
+
+
+
+查询域账号群组权限
+
+
+
+     net user
+lkf67102 /domain
+
+
+
+在如下网站申请对应的权限
+
+
+
+http://iright.huawei.com/pages/Default.aspx  
+
+
+
+ 
+
+
+
+常见的权限如下：
+
+
+
+USB云端映射权限：TC-Handsets-BJ-USB
+
+
+
+西安产品权限：
+
+
+
+TC-HandsetXian-SP-SW-WUHAN-AP
+
+
+
+上海产品权限：
+
+
+
+TC-SH-SW-APP  
+
+
+
+ TC-Handset-SW
+
+
+
+平台权限：
+
+
+
+TC-EMUI-RD
+
+
+
+ 
+
+
+
+武汉定制开发权限：
+
+
+
+TC-WH-DZKF
+
+
+
+武汉手机产品线权限：
+
+
+
+TC-WH-HS-SW
+
+
+
+ 
+
+
+
+问题单访问权限：
+
+
+
+TC-SMARTPHONE-SW-APP-Android
+
+
+
+3.2     
+权限申请
+
+根据需求搜索对应的权限后，提出申请。然后找对应的群组审批即可。
+
+
+
+ 
+
+
+
+4     
+常见产品分支：
+
+ALE EDCP：
+
+
+
+repo init -u
+http://10.176.110.150/platform/manifest.git -b br_balong_v8r2c52_gutl_EDCP
+--no-repo-verify --repo-branch=stable
+
+
+
+CRR量产：repo init -u http://10.140.130.49/platform/manifest.git -b
+br_seattle_v100r001c10_carrera_main_5_1 -m seattle_gp.xml --no-repo-verify
+--repo-branch=stable 
+
+
+
+GRA量产TA：repo init -u
+http://10.140.130.49/platform/manifest.git -b br_seattle_v100r001c00_grace_main
+-m seattle_gp.xml --no-repo-verify --repo-branch=stable 
+
+
+
+CRR CUST：
+
+
+
+repo init -u
+ssh://10.178.211.22/COMMON/manifest -b master --no-repo-verify
+--repo-branch=stable
+
+
+
+PLK：repo init -u http://10.140.130.49/platform/manifest.git -b
+br_seattle_v100r001c10_plank_main -m seattle_gp.xml --no-repo-verify
+--repo-branch=stable
+
+
+
+EMUI3.1release:
+
+
+
+ repo
+init -u http://10.176.110.150/huawei/hap/manifest.git -b EMUI3.1_Release
+--no-repo-verify --repo-branch=stable
+
+
+
+PC3.0.5-5.1:
+
+
+
+repo init -u
+ssh://rnd-hap.huawei.com/platform/manifest.git -b hw/platform/lollipop/5.1.0_r1/pc_3.0.5_l_5.1 --no-repo-verify
+--repo-branch=stable
+
+
+
+5     
+代码编译命令：
+
+5.1     
+海思产品主要编译命令：
+
+source
+build/envsetup.sh
+
+
+
+choosecombo
+
+
+
+mm Settings
+
+
+
+不知道模块名称看 该模块的Android.mk文件  
+
+
+
+
+
+5.2     
+高通芯片产品 比如G760等主要是 sh脚本 
+
+./xxx.sh
+Settings
+
+
+
+ 
+
+
+
+6     
+Git常见操作命令
+
+6.1     
+Git提交代码：
+
+首先保证工程代码是最新的  
+
+
+
+查询工程状态 git
+status
+
+
+
+先回退在更新，
+
+
+
+git reset –hard
+HEAD^^^   一个^表示一个回退单
+
+
+
+然后git
+pull  更新最新代码
+
+
+
+修改代码后，本地编译并手机验证无误后，
+
+
+
+提交当前目录代码  git add . 
+
+
+
+git commit –m 
+
+
+
+“DTS:DTS2015070807080
+
+
+
+Description:sfr date format month
+
+
+
+APPx:APP
+
+
+
+Bug-Type:New Feature 
+
+
+
+General or Risk:General”
+
+
+
+每个产品格式要求不一样，自行修改。
+
+
+
+最后提交到gerrit 
+
+
+
+Repo upload
+.
+
+
+
+其他git常用命令：
+
+
+
+新建本地分支：repo
+start local –all
+
+
+
+repo start branchname .   基于服务器拉新的本地分支，注意命令最后有一个点号
+
+
+
+删除本地分支：git
+branch –d local
+
+
+
+查询本地分支: git
+branch
+
+
+
+切换本地分支: git
+checkout otherbranchname
+
+
+
+查询git日志：git log
+
+
+
+查询修改文件：git log --name-only
+
+
+
+查询修改的文件差异部分： git diff  filenamepath
+
+
+
+提交后，发现代码有问题，需要重新修改在提交，可以用如下操作。不改变gerrit地址
+
+
+
+1.   重新修改代码。
+
+
+
+2.   git
+add . （把需要提交的修改add到index）
+
+
+
+3.   git
+commit --amend (注意保持Change-Id不变）
+
+
+
+4.   repo
+upload
+
+
+
+git log -p 文件名查看该文件的修改记录
+
+
+
+ 
+
+
+
+如果repo不行
+可以git强行提交
+
+
+
+git push origin HEAD:refs/for/分支名
+
+
+
+ex: git push origin
+HEAD:refs/for/br_balong_v8r2c52_gutl_EDCP
+
+
+
+提交后会生成gerrit地址：
+
+
+
+Ex: http://rnd-hap.huawei.com:8080/#/c/227905/
+
+
+
+6.2     
+触发CI编译
+
+有的CI能自动触发，有的服务器不行，需要手动触发！
+
+
+
+ 
+
+
+
+6.2.1       
+网站触发
+
+http://10.143.149.21:8080/jenkins/job/repo_builder/
+
+
+
+点击立即构建 然后填入对应的changeid和branch 点击build。之后等待CI是否触发。
+
+
+
+
+
+6.2.2       
+本地触发
+
+repo build
+branch:br_balong_v8r2c52_gutl_EDCP( 分支) Change-Id:(网页上) 
+
+
+
+EX: repo build branch:hw/pek/kitkat/msm8939_2.0.1_generic_product_C199s_TA2 Change-Id:
+I79a2651cfa07a043be84332d7a7a42aa1592f338
+
+
+
+ 
+
+
+
+如果本地编译没问题，CI一般没问题。CI有问题，可能是其他人提交造成CI故障。可以根据build log 查询原因。
+
+
+
+CI编译成功后，找MDE和 PL 打分，CMO入库。
+
+
+
+ 
+
+
+
+6.3     
+挑单：
+
+【GIT】利用cherry-pick实现分支间挑单任务
+
+
+
+    Cherry-pick命令可以将一个已有的commit视为补丁应用在其他分支上，同时自动生成一个新的commit，使用该命令必须保证当前工作目录处于干净状态。
+
+
+
+ 
+
+
+
+       常用参数：
+
+
+
+       -e                         生成commit前允许用户编辑注释信息
+
+
+
+       -x（推荐）          自动添加源commit信息，标识该commit是从哪里挑过来的
+
+
+
+       -n                        不自动生成commit
+
+
+
+       -s（推荐）          添加签名信息
+
+
+
+ 
+
+
+
+       挑单步骤：
+
+
+
+检索问题单的commit-id，可以在gerrit上检索，也可以通过git log获取；
+
+切换到目标分支，git cherry-pick -sx commit-id
+
+如果发生冲突，解决冲突后，git commit完成提交；
+
+验证完毕后，由于cherry-pic的问题单都是已经过评审的，所以可以不经过gerrit直接push入库；
+
+ 
+
+如何revert已入库(merged)问题单？
+
+找CMO 赶紧回退。
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+6.4     
+【GIT】如何在Gerrit上检索问题单
+
+通过Gerrit自带的检索框进行搜索
+
+
+
+ 
+
+
+
+ 
+
+
+
+
+ 
+  
+  关键字
+
+
+  
+  
+  说明
+
+
+  
+ 
+ 
+  
+  Status
+
+
+  
+  
+  Open：所有未合入的问题单；
+
+
+  Submitted：提交了由于依赖关系不满足而被挂起的问题单；
+
+
+  Merged：已经审核通过并合入的问题单；
+
+
+  
+ 
+ 
+  
+  Project
+
+
+  
+  
+  检索的project名
+
+
+  
+ 
+ 
+  
+  Branch
+
+
+  
+  
+  检索的分支
+
+
+  
+ 
+ 
+  
+  Message
+
+
+  
+  
+  包含的注释内容
+
+
+  
+ 
+ 
+  
+  AND
+
+
+  
+  
+  逻辑与
+
+
+  
+ 
+ 
+  
+  OR
+
+
+  
+  
+  逻辑或
+
+
+  
+ 
+ 
+  
+  NOT
+
+
+  
+  
+  逻辑非
+
+
+  
+ 
+
+
+
+ 
+
+
+
+       常用检索例：
+
+
+
+       1.通过DTS单号检索
+
+
+
+       status:open
+message:DTSXXXXXXXXXXXX —— 检索审核中的问题单
+
+
+
+       status:merged
+message:DTSXXXXXXXXXXXX —— 检索已入库的问题单
+
+
+
+ 
+
+
+
+       2.检索某个project已入库问题单
+
+
+
+       status:merged project: platform/frameworks/base
+
+
+
+ 
+
+
+
+       3.检索某条分支入库的问题单
+
+
+
+       status:merged
+branch: hw/pek/ics/M7630AABBQMLZA4040276I/Trunk
+
+
+
+ 
+
+
+
+4.检索某change-id或
+commit-id入库的问题单
+
+
+
+搜索栏中直接输入change-id 或 commit-id 即可，不需添加额外的任何参数
+
+
+
+ 
+
+
+
+ 
+
+
+
+       小技巧：
+
+
+
+       1.可以点击gerrit上的链接，快速检索指定库，分支，责任人关联的问题单；
+
+
+
+        
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+
+
+本地代码修改太多，工程混乱，但又不想整个目录都删除？？？
+
+
+
+
+
+
+ 
+
+
+
+解决方案：
+
+
+
+全删重下： 
+
+到代码跟目录下 rm -rf * (此命令不会删除.repo) 目录 
+
+执行 repo sync –c 即可 （5分钟内搞搞定，跟库上完全一样） 
+
+ 
+
+清除之后还能继续单编:
+
+到代码根目录下执行 repo forall -c “git
+checkout .” （回退所有未add 的修改） 
+
+继续执行 repo forall –c “git clean -df” (删除每个仓下的临时文件和文件夹)
+
+repo sync –c 即可 
+
+ 
+
+进入 .repo 目录
+
+rm –rf
+manifest*
+
+在代码根目录执行 repo init ……
+
+速度也很快
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+7     
+常用技巧
+
+7.1     
+Linux下查询命令小技巧：
+
+alias
+gitf='git log ./ | grep -i --color $1' 把这句话，放到.bashrc里面
+
+
+
+使用的时候只要gitf
+DTS2014110704561就行了
+
+
+
+alias
+xfindx='find ./ -iname "*.xml"|xargs grep -i --color $1'
+
+
+
+alias
+xfindj='find ./ -iname "*.java"|xargs grep -i --color $1'
+
+
+
+alias
+xfindc='find ./ -iname "*.cpp" -o -iname "*.c" -o -iname
+"*.h" -o -iname "*.hpp"|xargs grep -i --color $1'
+
+
+
+alias
+xfinda='find ./ -iname "*.git" -prune -o -iname "*.svn"
+-prune -o -iname "out" -prune -o -iname "*.repo" -prune -o
+-name "*"|xargs grep -i --color $1'
+
+
+
+alias
+xfindm='find ./ -iname "*.mk"|xargs grep -i --color $1'
+
+
+
+alias
+xfindp='find ./ -iname "*.prop"|xargs grep -i --color $1'
+
+
+
+alias
+xfindf='find ./ -type f -iname $1'
+
+
+
+alias gitf='git
+log ./ | grep -i --color $1'
+
+
+
+贴进去source .bashrc   source ~/.bashrc
+
+
+
+ 
+
+
+
+查询xml 用xfindx  xxx 其他类推。
+
+
+
+ 
+
+                                                      
+李佳 KF67102 
+
+
+
+ 
+
+
+
