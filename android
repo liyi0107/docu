@@ -1,0 +1,1056 @@
+
+
+Android 学习
+
+
+
+1.Android
+系统架构
+
+
+
+Android分为四层架构
+
+
+
+Linux内核层
+
+
+
+提供了基本的系统功能，比如进程管理，内存管理，设备管理（如摄像头，键盘，显
+
+
+
+示器）。同时，也提供大量的设备驱动。
+
+
+
+系统运行库层
+
+
+
+包括了专门为 Android 开发的基于 Java 的程序库。这个类别程序库的示例包括应用
+
+
+
+程序框架库，如用户界面构建，图形绘制和数据库访问，还包括了Dalvik虚拟机，是的每一个Android应用都能运行在独立进程中。
+
+
+
+应用框架层
+
+
+
+提供构建应用程序时可能用到的各种API。
+
+
+
+应用层
+
+
+
+所有安装在手机上的应用程序都是属于这一层的，包括联系人、短信等程序
+
+
+
+
+
+
+
+ 
+
+
+
+ 
+
+
+
+2.四大组件
+
+
+
+1）活动（activity）
+
+
+
+活动代表了一个具有用户界面的单一屏幕，活动的生命周期图如下：
+
+
+
+
+
+onCreate() 这是第一个回调，在活动第一次创建是调用 
+
+
+
+onStart() 这个回调在活动为用户可见时被调用 
+
+
+
+onResume() 这个回调在应用程序与用户开始可交互的时候调用 
+
+
+
+onPause() 被暂停的活动无法接受用户输入，不能执行任何代码。当当前活动将要被暂停，上一个活动将要被恢复是调用 
+
+
+
+onStop() 当活动不在可见时调用 
+
+
+
+onDestroy() 当活动被系统销毁之前调用 
+
+
+
+onRestart() 当活动被停止以后重新打开时调用
+
+
+
+ 
+
+
+
+活动之间的跳转：显式intent、隐式intent
+
+
+
+显式：Intent intent = new Intent（FirstActivity.this, SecondActivity.class）；
+
+
+
+         StartActivity（intent）；
+
+
+
+FirstActivity.this作为上下文，SecondActivity.class作为目标活动
+
+
+
+隐式：通过在<activity>标签下配置<intent-filter>的内容，指定当前活动能响应的action和category，只有action和category中的内容能完全匹配上Intent中指定的内容时，这个活动才能响应该Intent。
+
+
+
+ 
+
+
+
+2）广播接收器（Broadcast Receiver）
+
+
+
+广播接收器用于响应来自其他应用程序或者系统的广播消息。这些消息有时被称为事件或者意图。
+
+
+
+广播接收器需要实现为BroadcastReceiver类的子类，并重写onReceive()方法来接收以Intent对象为参数的消息。
+
+
+
+public class MyReceiver extends BroadcastReceiver {
+
+
+
+   @Override
+
+
+
+   public void
+onReceive(Context context, Intent intent) {
+
+
+
+      Toast.makeText(context,
+"Intent Detected.", Toast.LENGTH_LONG).show();
+
+
+
+   }
+
+
+
+}
+
+
+
+动态注册：registerReceiver（broadcastReceiver，intentFilter）；
+
+
+
+动态注册最后必须取消注册，unregisterReceiver（broadcastReceiver）；
+
+
+
+静态注册：在AndroidManifest.xml文件中注册：
+
+
+
+       <receiver
+
+
+
+              android:name=”.broadcastReceiver”
+
+
+
+              android:enabled=”true”
+
+
+
+              android:exported=”true”
+
+
+
+       </receiver>
+
+
+
+另外，广播接收器需要在<intent-filter>标签里添加相应的action才可以监听到广播并响应。
+
+
+
+3）内容提供器（provider）
+
+
+
+       通过请求从一个应用程序向其他的应用程序提供数据。这些请求由类
+ContentResolver 的方法来处理。内容提供器可以使用不同的方式来存储数据。数据可以被存放在数据库，文件，甚至是网络。
+
+
+
+       创建自己的内容提供者的简单步骤：
+
+
+
+首先，继承类
+ContentProviderbase 来创建一个内容提供者类。
+
+
+
+其次，定义用于访问内容的你的内容提供者URI地址。
+
+
+
+接下来，创建数据库来保存内容。通常，Android 使用 SQLite 数据库，并在框架中重写 onCreate() 方法来使用 SQLiteOpenHelper 的方法创建或者打开提供者的数据库。当应用程序被启动，它的每个内容提供者的 onCreate() 方法将在应用程序主线程中被调用。
+
+
+
+最后，使用<provider.../>标签在 AndroidManifest.xml 中注册内容提供器。
+
+
+
+onCreate():当提供者被启动时调用。
+
+
+
+query():该方法从客户端接受请求。结果是返回指针(Cursor)对象。
+
+
+
+insert():该方法向内容提供者插入新的记录。
+
+
+
+delete():该方法从内容提供者中删除已存在的记录。
+
+
+
+update():该方法更新内容提供者中已存在的记录。
+
+
+
+getType():该方法为给定的URI返回元数据类型。
+
+
+
+服务（service）
+
+服务是一个后台运行的组件，执行长时间运行且不需要用户交互的任务。即使应用被销毁也依然可以工作。
+
+服务拥有生命周期方法，可以实现监控服务状态的变化，可以在合适的阶段执行工作。下面的左图展示了当服务通过startService()被创建时的声明周期，右图则显示了当服务通过bindService()被创建时的生命周期：
+
+
+
+
+
+
+
+
+
+onStartCommand()
+其他组件(如活动)通过调用startService()来请求启动服务时，系统调用该方法。如果你实现该方法，你有责任在工作完成时通过stopSelf()或者stopService()方法来停止服务。 
+
+
+
+onBind 当其他组件想要通过bindService()来绑定服务时，系统调用该方法。如果你实现该方法，你需要返回IBinder对象来提供一个接口，以便客户来与服务通信。你必须实现该方法，如果你不允许绑定，则直接返回null。 
+
+
+
+onUnbind()
+当客户中断所有服务发布的特殊接口时，系统调用该方法。 
+
+
+
+onRebind()
+当新的客户端与服务连接，且此前它已经通过onUnbind(Intent)通知断开连接时，系统调用该方法。 
+
+
+
+onCreate()
+当服务通过onStartCommand()和onBind()被第一次创建的时候，系统调用该方法。
+
+
+
+onDestroy()
+当服务不再有用或者被销毁时，系统调用该方法。服务需要实现该方法来清理任何资源，如线程，已注册的监听器，接收器等。
+
+
+
+一旦在项目的任何位置调用了Conext的startService()方法相应的服务就会启动起来井回调onStartCommand()方法。如果这个服务之前还没有创建过，onCreate()方法会先于onStartCommand ()方法被调用。虽然每调用一次startService()方法,onStartCommand()就会执行一次，但实际上每个服务都只会存在一个实例。所以不管调用了多少次startService()，只需调用一次stopService()或stopSelf()方法， 服务就会停止下来了。
+
+
+
+另外，还可以调用Context的bindService()来获取一个服务的持久连接，这时就会回调服务中的onBind()方法。 类似地，如果这个服务之前还没有创建过，onCreate()方法会先于onBind()方法执行。之后，调用方可以获取到onBind()方法里返回的IBinder对象的实例，这样就能自由地和服务进行通信了。只要调用方和服务之间的连接没有断开，服务就会一直保持运行状态。
+
+
+
+当调用了startService()方法后，又去调用stopService()方法， 这时服务中的onDestroy()方法就会执行，表示服务已经销毁了。类似地，当调用了bindService()方法后又去调用unbindService()方法，onDestroy()方法也会执行。但需要注意，我们是完全有可能对一个服务既调用了startService()方法， 又调用bindService()方法的，这种情况下，一个服务只要被启动或者被绑定了之后，就会一一直处于运行状态，必须要让以上两种条件同时满足，服务才能被销毁。所以，这种情况下要同时调用stopService()和unbindService()，onDestroy()方法才会执行。
+
+
+
+
+
+
+
+ 
+
+
+
+3．重要控件
+
+
+
+1）EditText
+
+
+
+       android:layout_gravity="center_vertical"
+设置控件显示的位置：默认top，这里居中显示，还有bottom 
+
+
+
+android:hint="请输入数字！"设置显示在空间上的提示信息 
+
+
+
+android:numeric="integer"
+设置只能输入整数，如果是小数则是：decimal 
+
+
+
+android:singleLine="true"
+设置单行输入，一旦设置为true，则文字不会自动换行。
+
+
+
+android:password="true"
+设置只能输入密码
+
+
+
+android:textColor
+= "#ff8c00" 字体颜色
+
+
+
+android:textStyle="bold"
+字体，bold,
+italic, bolditalic 
+
+
+
+android:textSize="20dip"
+大小
+
+
+
+android:capitalize
+= "characters" 以大写字母写
+
+
+
+android:textAlign="center" EditText没有这个属性，但TextView有
+android:textColorHighlight="#cccccc" 被选中文字的底色，默认为蓝色
+
+
+
+android:textColorHint="#ffff00" 设置提示信息文字的颜色，默认为灰色
+android:textScaleX="1.5" 控制字与字之间的间距
+
+
+
+android:typeface="monospace" 字型，normal, sans, serif, monospace
+android:background="@null" 空间背景，这里没有，指透明
+
+
+
+android:layout_weight="1" 权重，控制控件之间的地位,在控制控件显示的大小时蛮有用的。
+
+
+
+密码框属性 android:password="true" 这条可以让EditText显示的内容自动为星号，输入时内容会在1秒内变成*字样。
+
+
+
+纯数字 android:numeric="true" 这条可以让输入法自动变为数字输入键盘，同时仅允许0-9的数字输入
+
+
+
+仅允许 android:capitalize="cwj1987" 这样仅允许接受输入cwj1987，一般用于密码验证 下面是一些扩展的风格属性
+
+
+
+android:editable="false"
+设置EditText不可编辑
+
+
+
+android:singleLine="true"
+强制输入的内容在单行
+
+
+
+android:ellipsize="end"
+自动隐藏尾部溢出数据，一般用于文字内容过长一行无法全部显示时
+
+
+
+edittext光标
+
+
+
+edittext.requestFocusFromTouch();  //让光标放入到点击位置。
+
+
+
+edittext.requestFocus();  //默认方式获得焦点
+
+
+
+EditText editor
+= (EditText)getCurrentView();  
+
+
+
+//光标处插入 
+
+
+
+int cursor =
+editor.getSelectionStart(); editor.getText().insert(cursor,delta); 
+
+
+
+//让光标移到末端（这样文字就会向前显示）
+
+
+
+EditText et =
+String text = "text"; et.setText(text);
+et.setSelection(text.length());
+
+
+
+android:cursorVisible="false"
+ //隐藏光标
+
+
+
+2）listview
+
+
+
+       ListView是以列表的形式显示大量数据的，因此我们需要事先将数据准备好，当然这些数据可以来自本地数据库或者来自网络都可以。但是，我们定义的数据是不能直接给ListView显示的，需要借助适配器来完成。Android中提供可很多的适配器的实现类，其中使用的最多的就是ArrayAdapter。这个类通过泛型来提供各种数据类型的支持，然后在构造方法中将我们的数据传入，注意ArrayAdapter有很多的构造器重载，我们需要根据我们的需要进行选择。创建了ArrayAdapter对象之后，我们只要调用ListView的setAdapter来设置适配器就行了。
+
+
+
+ 
+
+
+
+效率的问题
+
+
+
+上面我们给出的方式是最简单的实现方式，然而，这种方式是有缺陷的，一个最严重的却下就是效率低下。上面ItemAdapter中的getView方法中，每次一个item出现的时候，都会将item的布局加载一遍，因此如果item中的显示项目比较多的时候，并且用户快速滚动的时候，这就会成为性能的瓶颈。
+
+
+
+我们的Item滑出屏幕的时候，convertView对象并不是立即回收的，会保留一段时间，直到内存到一定的阈值。 
+
+
+
+ 因此，我们完全可以直接利用上面不为空的convertView对象，而不用每次都从xml布局文件中创建：
+
+
+
+   
+if (convertView == null) {
+
+
+
+       
+view = LayoutInflater.from(getContext()).inflate(layoutId, parent,
+false);
+
+
+
+    }
+else {
+
+
+
+       
+view = convertView;
+
+
+
+    }
+
+
+
+我们在inflate之前首先查看一下convertView是不是空，如果是的话说明是第一次启动创建，因此需要从xml中创建，如果不是则直接复用。 
+
+
+
+   不过，优化还没有结束。虽然我们不会重复地去加载布局文件，但是我们每次在getView的时候，都会调用view的findViewById来查找控件实例。其实我们可以借助一个ViewHolder的机制来进行优化，代码如下：
+
+
+
+public class ItemAdapter extends
+ArrayAdapter<Item> {
+
+
+
+   
+private int layoutId;
+
+
+
+ 
+
+
+
+   
+public ItemAdapter(Context context, int layoutId, List<Item> list)
+{
+
+
+
+       
+super(context, layoutId, list);
+
+
+
+       
+this.layoutId = layoutId;
+
+
+
+    }
+
+
+
+   
+@NonNull
+
+
+
+   
+@Override
+
+
+
+   
+public View getView(int position, View convertView, ViewGroup parent) {
+
+
+
+       
+Log.d("ItemAdapter", "getView called, position: " +
+position + ", convertView: " + convertView);
+
+
+
+       
+View view;
+
+
+
+       
+ViewHolder viewHolder;
+
+
+
+       
+Item item = getItem(position);
+
+
+
+       
+if (convertView == null) {
+
+
+
+           
+view = LayoutInflater.from(getContext()).inflate(layoutId, parent,
+false);
+
+
+
+           
+viewHolder = new ViewHolder();
+
+
+
+           
+viewHolder.imageView = (ImageView) view.findViewById(R.id.item_img);
+
+
+
+           
+viewHolder.textView = (TextView) view.findViewById(R.id.item_text);
+
+
+
+           
+view.setTag(viewHolder);
+
+
+
+       
+} else {
+
+
+
+           
+view = convertView;
+
+
+
+           
+viewHolder = (ViewHolder) view.getTag();
+
+
+
+       
+}
+
+
+
+       
+viewHolder.imageView.setImageResource(item.getImgId());
+
+
+
+      
+ viewHolder.textView.setText(item.getName());
+
+
+
+       
+return view;
+
+
+
+    }
+
+
+
+   
+class ViewHolder {
+
+
+
+       
+ImageView imageView;
+
+
+
+       
+TextView textView;
+
+
+
+    }
+
+
+
+}
+
+
+
+3）RecyclerView
+
+
+
+相对ListView的优点：
+
+
+
+RecyclerView封装了viewholder的回收复用，也就是说RecyclerView标准化了ViewHolder，编写Adapter面向的是ViewHolder而不再是View了，复用的逻辑被封装了，写起来更加简单。
+
+
+
+      直接省去了listview中convertView.setTag(holder)和convertView.getTag()这些繁琐的步骤。
+
+
+
+提供了一种插拔式的体验，高度的解耦，异常的灵活，针对一个Item的显示RecyclerView专门抽取出了相应的类，来控制Item的显示，使其的扩展性非常强。
+
+
+
+设置布局管理器以控制Item的布局方式，横向、竖向以及瀑布流方式
+
+
+
+      可设置Item的间隔样式（可绘制）
+
+
+
+      通过继承RecyclerView的ItemDecoration这个类，然后针对自己的业务需求去书写代码。
+
+
+
+可以控制Item增删的动画，可以通过ItemAnimator这个类进行控制，当然针对增删的动画，RecyclerView有其自己默认的实现。
+
+
+
+但是关于Item的点击和长按事件，需要用户自己去实现。
+
+
+
+使用：
+
+
+
+在使用RecyclerView时候，必须指定一个适配器Adapter和一个布局管理器LayoutManager。适配器继承RecyclerView.Adapter类，具体实现类似ListView的适配器，取决于数据信息以及展示的UI。布局管理器用于确定RecyclerView中Item的展示方式以及决定何时复用已经不可见的Item，避免重复创建以及执行高成本的findViewById()方法。
+
+
+
+ 
+
+
+
+标准实现步骤如下：
+
+
+
+① 创建Adapter：创建一个继承RecyclerView.Adapter<VH>的Adapter类（VH是ViewHolder的类名）
+
+
+
+② 创建ViewHolder：在Adapter中创建一个继承RecyclerView.ViewHolder的静态内部类，记为VH。ViewHolder的实现和ListView的ViewHolder实现几乎一样。
+
+
+
+③ 在Adapter中实现3个方法：
+
+
+
+onCreateViewHolder()，这个方法主要生成为每个Item inflater出一个View，但是该方法返回的是一个ViewHolder。该方法把View直接封装在ViewHolder中，然后我们面向的是ViewHolder这个实例，当然这个ViewHolder需要我们自己去编写。
+
+
+
+需要注意的是在onCreateViewHolder()中，映射Layout必须为
+
+
+
+View v =
+LayoutInflater.from(parent.getContext()).inflate(R.layout.item_1, parent,
+false);
+
+
+
+而不能是：
+
+
+
+View v =
+LayoutInflater.from(parent.getContext()).inflate(R.layout.item_1, null);
+
+
+
+onBindViewHolder()，这个方法主要用于适配渲染数据到View中。方法提供给你了一viewHolder而不是原来的convertView。
+
+
+
+getItemCount()，这个方法就类似于BaseAdapter的getCount方法了，即总共有多少个条目。
+
+
+
+可以看出，RecyclerView将ListView中getView()的功能拆分成了onCreateViewHolder()和onBindViewHolder()。
+
+
+
+基本的Adapter实现如下：
+
+
+
+①
+创建Adapter
+
+
+
+public class NormalAdapter extends
+RecyclerView.Adapter<NormalAdapter.VH>{
+
+
+
+    ② 创建ViewHolder
+
+
+
+   
+public static class VH extends RecyclerView.ViewHolder{
+
+
+
+       
+public final TextView title;
+
+
+
+       
+public VH(View v) {
+
+
+
+           
+super(v);
+
+
+
+           
+title = (TextView) v.findViewById(R.id.title);
+
+
+
+       
+}
+
+
+
+    }
+
+
+
+    
+
+
+
+   
+private List<String> mDatas;
+
+
+
+   
+public NormalAdapter(List<String> data) {
+
+
+
+       
+this.mDatas = data;
+
+
+
+    }
+
+
+
+    ③ 在Adapter中实现3个方法
+
+
+
+   
+@Override
+
+
+
+   
+public void onBindViewHolder(VH holder, int position) {
+
+
+
+       
+holder.title.setText(mDatas.get(position));
+
+
+
+       
+holder.itemView.setOnClickListener(new View.OnClickListener() {
+
+
+
+           
+@Override
+
+
+
+           
+public void onClick(View v) {
+
+
+
+                //item 点击事件
+
+
+
+           
+}
+
+
+
+       
+});
+
+
+
+    }
+
+
+
+   
+@Override
+
+
+
+   
+public int getItemCount() {
+
+
+
+       
+return mDatas.size();
+
+
+
+    }
+
+
+
+   
+@Override
+
+
+
+   
+public VH onCreateViewHolder(ViewGroup parent, int viewType) {
+
+
+
+       
+//LayoutInflater.from指定写法
+
+
+
+       
+View v =
+LayoutInflater.from(parent.getContext()).inflate(R.layout.item_1, parent,
+false);
+
+
+
+       
+return new VH(v);
+
+
+
+    }
+
+
+
+}
+
+
+
+创建完Adapter，接着对RecyclerView进行设置，一般来说，需要为RecyclerView进行四大设置：
+
+
+
+Layout Manager(必选)
+
+
+
+Adapter(必选)
+
+
+
+Item Decoration(可选，默认为空)
+
+
+
+Item Animator(可选，默认为DefaultItemAnimator)
+
+
+
+如果要实现ListView的效果，只需要设置Adapter和Layout Manager，如下：
+
+
+
+List<String> data = initData();
+
+
+
+RecyclerView rv = (RecyclerView)
+findViewById(R.id.rv);
+
+
+
+rv.setLayoutManager(new
+LinearLayoutManager(this));
+
+
+
+rv.setAdapter(new NormalAdapter(data));
+
+
+
+从前面的基础使用可以看到，RecyclerView
+在使用过程中要比
+ListView 多一个
+setLayoutManager 步骤，这个
+LayoutManager 就是用于控制我们
+RecyclerView 最终的展示效果的。
+
+
+
+LayoutManager负责RecyclerView的布局，其中包含了Item View的获取与回收。
+
+
+
+RecyclerView提供了三种布局管理器：
+
+
+
+ LinerLayoutManager 以垂直或者水平列表方式展示Item
+
+
+
+GridLayoutManager 以网格方式展示Item
+
+
+
+StaggeredGridLayoutManager 以瀑布流方式展示Item
+
+
+
+如果你想用 RecyclerView 来实现自己自定义效果，则应该去继承实现自己的
+LayoutManager，并重写相应的方法，而不应该想着去改写 RecyclerView。
+
+
+
+ 
+
+
+
