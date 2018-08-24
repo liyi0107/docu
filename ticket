@@ -1,0 +1,395 @@
+
+
+DTS2018072008952
+日本渠道不支持彩信，在日语下，信息编辑框中显示为SMS，在中文下，信息编辑输入框中显示为短信/彩信
+
+
+
+ 
+
+
+
+问题代码定位在MessageFullScreenFragment.java下
+
+
+
+mDataEditor.setHint(R.string.type_to_compose_text_enter_to_send_new_sms);
+
+
+
+且在日本渠道下中文翻译
+
+
+
+<string
+name="type_to_compose_text_enter_to_send_new_sms"
+priority="LT">"短信/彩信"</string>
+
+
+
+解决方案：新增翻译<string
+name="type_to_compose_text_enter_to_send_new_sms"
+priority="LT">"短信"</string>
+
+
+
+
+
+【EMUI 9.0】【HIMA-L29_TEF】【APN_必现】插21407白卡,新建APN鉴权是PAP,不是Not set
+
+
+
+ 
+
+
+
+在源码中找到APN相关.java文件，发现ApnEditor.java和ApnEditorHwBase.java文件涉及新建apn的显示。
+
+
+
+ApnEditor.java中，读代码发现authtype的显示主要由getAuthTypeConfiguration(mccmnc)决定
+
+
+
+在ApnEditorHwBase.java中找到该函数的实现：
+
+
+
+
+
+发现authtype由Settings.System.getString(getContentResolver(),"hw_apn_authtype")得到，通过
+
+
+
+adb shell
+
+find -name hw_defaults.xml > sdcard/1.txt
+
+
+
+找到该xml文件在sd卡对应路径，
+
+
+
+打开该文件夹，在carrier在carrier.xml里发现了这个字符串，
+
+
+
+
+
+在arrays.xml中
+
+
+
+
+
+1对应的authtype是PAP，把这里改成null或者直接删掉这个字符串的话，在ApnEditor.java：
+
+
+
+
+
+这时mAuthType将被设置为空，即默认鉴权类型被设置为就是“not set”
+
+
+
+ 
+
+
+
+ 
+
+
+
+
+
+mms_config.xml文件里应该有一个tag为SMSCAddress的字符串显示那个号码，但是我打开的这个项目的xml文件里貌似没找到这个字符串，然后我在vmp下的warsaw的包里面的xml文件里找到了这个字符串，问题应该就是这里
+
+
+
+ 
+
+
+
+
+
+通过system_app_anr@1532015866302中
+
+
+
+ANR类型：
+
+
+
+Subject: Input dispatching timed out 
+
+
+
+是输入时间处理超时引起；
+
+
+
+查看当前CPU使用率，发现是system_server CPU使用率过高：
+
+
+
+CPU usage from 0ms to 6450ms later
+(2018-07-19 23:57:37.908 to 2018-07-19 23:57:44.357):
+
+
+
+ 
+186% 1194/system_server: 101% user + 84% kernel / faults: 33709 minor
+1532 major      
+
+
+
+通过android log中BlockMonitor 关键字搜索，发现是binder 调用耗时过长:
+
+
+
+07-19 23:57:37.143 28675 28675 W
+BlockMonitor: Package name: com.android.mms
+
+
+
+07-19 23:57:37.143 28675
+28675 W BlockMonitor: The binder calling took 7972ms.
+
+
+
+07-19 23:57:37.143 28675 28675 W
+BlockMonitor: android.os.BlockMonitor.checkBinderTime(BlockMonitor.java:160)
+
+
+
+07-19 23:57:37.143 28675 28675 W
+BlockMonitor: android.os.BinderProxy.transact(Binder.java:1153)
+
+
+
+07-19 23:57:37.143 28675 28675 W
+BlockMonitor: com.android.internal.view.IInputMethodManager$Stub$Proxy.startInputOrWindowGainedFocus(IInputMethodManager.java:757)
+
+
+
+07-19 23:57:37.143 28675 28675 W
+BlockMonitor:
+android.view.inputmethod.InputMethodManager.startInputInner(InputMethodManager.java:1409)
+
+
+
+07-19 23:57:37.143 28675 28675 W
+BlockMonitor:
+android.view.inputmethod.InputMethodManager.onPostWindowFocus(InputMethodManager.java:1688)
+
+
+
+07-19 23:57:37.143 28675 28675 W
+BlockMonitor:
+android.view.ViewRootImpl.handleWindowFocusChanged(ViewRootImpl.java:2793)
+
+
+
+07-19 23:57:37.143 28675 28675 W
+BlockMonitor: android.view.ViewRootImpl.access$1100(ViewRootImpl.java:173)
+
+
+
+07-19 23:57:37.143 28675 28675 W
+BlockMonitor: com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:524)
+
+
+
+07-19 23:57:37.143 28675 28675 W
+BlockMonitor: com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1011)
+
+
+
+07-19 23:57:37.143 28675 28675 W
+cutils-trace: Truncated name in atrace_begin_body: BlockMonitor:Package
+name: com.android.mms The binder calling took 7972ms.
+
+
+
+ 
+
+
+
+system_app_anr@1532015866302中搜索binder transactions关键字定位到system_server:Binder:1194_19等待时间过长 ：
+
+
+
+blocked binder transactions:
+
+
+
+    10668:10727(i.systemmanager:ndHandlerThread)
+-> 1194:2285(system_server:Binder:1194_7) code 4 wait:0.22682292 s
+
+
+
+    12103:10773(gle.android.gms:IntentService[D)
+-> 5560:6671(.gms.persistent:Binder:5560_7) code 2 wait:1.506592188 s
+
+
+
+    1194:1620(system_server:SensorService) ->
+853:953(sensors@1.0-ser:HwBinder:853_1) code 4 wait:0.21702604 s
+
+
+
+    1194:1646(system_server:HWExtMotionServ)
+-> 893:2138(motion@1.0-serv:HwBinder:893_2) code 5 wait:19.718673964 s
+
+
+
+866:1172(hiview:JankManager) ->
+1194:7616(system_server:Binder:1194_19) code 5f444d50 wait:5.318294793 s
+
+
+
+ 
+
+
+
+找到Binder:1194_19：
+
+
+
+"Binder:1194_19" prio=5 tid=200
+Native
+
+
+
+  |
+group="main" sCount=1 dsCount=0 flags=1 obj=0x13480060 self=0x7c894db400
+
+
+
+  |
+sysTid=7616 nice=0 cgrp=default sched=0/0 handle=0x7c81c1a4f0
+
+
+
+  |
+state=S schedstat=( 107281082989 51280469644 192224 ) utm=6717 stm=4010 core=6
+HZ=100
+
+
+
+  |
+stack=0x7c81b1f000-0x7c81b21000 stackSize=1009KB
+
+
+
+  |
+held mutexes=
+
+
+
+ 
+kernel: (couldn't read /proc/self/task/7616/stack)
+
+
+
+ 
+native: #00 pc 000000000001f2ac 
+/system/lib64/libc.so (syscall+28)
+
+
+
+ 
+native: #01 pc 00000000000db0f4 
+/system/lib64/libart.so
+(art::ConditionVariable::WaitHoldingLocks(art::Thread*)+148)
+
+
+
+ 
+native: #02 pc 000000000037016c  /system/lib64/libart.so
+(art::JNI::GetArrayLength(_JNIEnv*, _jarray*)+456)
+
+
+
+ 
+native: #03 pc 000000000011ad80 
+/system/lib64/libandroid_runtime.so
+(android::android_os_Debug_getPssPid(_JNIEnv*, _jobject*, int, _jlongArray*,
+_jlongArray*)+612)
+
+
+
+  at
+android.os.Debug.getPss(Native method)
+
+
+
+  at
+com.android.server.am.ActivityManagerService.dumpApplicationMemoryUsage(ActivityManagerService.java:20486)
+
+
+
+  at
+com.android.server.am.ActivityManagerService.dumpApplicationMemoryUsage(ActivityManagerService.java:20353)
+
+
+
+  at
+com.android.server.am.ActivityManagerService$MemBinder$1.dump(ActivityManagerService.java:3090)
+
+
+
+  at
+com.android.server.utils.PriorityDump.dump(PriorityDump.java:182)
+
+
+
+  at
+com.android.server.am.ActivityManagerService$MemBinder.dump(ActivityManagerService.java:3103)
+
+
+
+  at
+android.os.Binder.doDump(Binder.java:579)
+
+
+
+  at
+android.os.Binder.dump(Binder.java:569)
+
+
+
+  at
+android.os.Binder.onTransact(Binder.java:519)
+
+
+
+  at
+android.os.Binder.execTransact(Binder.java:739)
+
+
+
+发现libart.so
+WaitHoldingLocks
+
+
+
+该问题关键点是binder调用时间过长的原因，因缺少trace.txt日志，无法确认那个进程调用binder耗时过长
+
+
+
+ 
+
+
+
+
+
+mms_config.xml文件里应该有一个tag为SMSCAddress的字符串显示那个号码，但是我打开的这个项目的xml文件里貌似没找到这个字符串，然后我在vmp下的warsaw的包里面的xml文件里找到了这个字符串，问题应该就是这里
+
+
+
+ 
+
+
+
